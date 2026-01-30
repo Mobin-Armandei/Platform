@@ -1,0 +1,119 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+//////////////////////////////////////////////////
+// User & Role
+//////////////////////////////////////////////////
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  firstName    String
+  lastName     String?
+  password     String
+
+  role         String   // ADMIN | CUSTOMER | SITE_MANAGER
+  gender       String   // MALE | FEMALE
+  phoneNumber  String
+  birthDate    DateTime?
+
+  roleId       Int
+  roleRel      Role     @relation(fields: [roleId], references: [id])
+
+  wallet       Wallet?
+  projects     Project[]
+  tickets      Ticket[]
+
+  createdAt    DateTime @db.DateTime2
+  updatedAt    DateTime @db.DateTime2
+
+  @@map("users")
+}
+
+model Role {
+  id        Int     @id @default(autoincrement())
+  name      String  @unique  // ADMIN | CUSTOMER | SITE_MANAGER
+  users     User[]
+
+  createdAt DateTime @db.DateTime2
+  updatedAt DateTime @db.DateTime2
+
+  @@map("roles")
+}
+
+//////////////////////////////////////////////////
+// Wallet
+//////////////////////////////////////////////////
+
+model Wallet {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @unique
+  user      User      @relation(fields: [userId], references: [id])
+
+  balance   Decimal   @default(0)
+  logs      WalletLog[]
+
+  createdAt DateTime  @db.DateTime2
+  updatedAt DateTime  @db.DateTime2
+
+  @@map("wallets")
+}
+
+model WalletLog {
+  id        Int      @id @default(autoincrement())
+  walletId  Int
+  wallet    Wallet   @relation(fields: [walletId], references: [id])
+
+  amount    Decimal
+  type      String   // DEPOSIT | WITHDRAW
+  note      String?
+
+  createdAt DateTime @db.DateTime2
+
+  @@map("wallet_logs")
+}
+
+//////////////////////////////////////////////////
+// Projects (Website Builder / CRM)
+//////////////////////////////////////////////////
+
+model Project {
+  id        Int      @id @default(autoincrement())
+  name      String
+  domain    String?
+  status    String   // PENDING | IN_PROGRESS | COMPLETED
+  progress  Int      @default(0)
+
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @db.DateTime2
+  updatedAt DateTime @db.DateTime2
+
+  @@map("projects")
+}
+
+//////////////////////////////////////////////////
+// Tickets (Support System)
+//////////////////////////////////////////////////
+
+model Ticket {
+  id        Int      @id @default(autoincrement())
+  title     String
+  message   String
+  status    String   // OPEN | ANSWERED | CLOSED
+
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @db.DateTime2
+  updatedAt DateTime @db.DateTime2
+
+  @@map("tickets")
+}

@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+:root {
+  --font-sans: var(--font-vazirmatn);
+}
+
+body {
+  font-family: var(--font-vazirmatn), system-ui, sans-serif;
+  direction: rtl;
+}

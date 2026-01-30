@@ -9,170 +9,141 @@ import {
   Paper, 
   CircularProgress,
   Alert,
-  Snackbar
+  Snackbar,
+  Divider
 } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
-const loginRequest = async ({ email, password }) => {
-  try {
-    const response = await axios.post("http://localhost:5000/api/auth/login", {
-      email,
-      password,
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-    return response.data;
-  } catch (error) {
-    throw error.response?.data || error;
-  }
-};
+function AuthLayout({ title, subtitle, children }) {
+  return (
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        bgcolor: "#f5f7fa",
+      }}
+    >
+      {/* Right branding panel (hidden on mobile) */}
+      <Box
+        sx={{
+          display: { xs: "none", md: "flex" },
+          width: "45%",
+          bgcolor: "#0a1a2f",
+          color: "#fff",
+          alignItems: "center",
+          justifyContent: "center",
+          p: 6,
+        }}
+      >
+        <Box>
+          <Typography variant="h3" fontWeight="bold" mb={2}>
+            Arvan Style
+          </Typography>
+          <Typography sx={{ opacity: 0.8, maxWidth: 360 }}>
+            زیرساخت ابری، سریع، امن و قابل اعتماد برای توسعه‌دهندگان حرفه‌ای
+          </Typography>
+        </Box>
+      </Box>
 
-export default function LoginPage() {
+      {/* Form panel */}
+      <Box
+        sx={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          p: 2,
+        }}
+      >
+        <Paper
+          elevation={0}
+          sx={{
+            width: "100%",
+            maxWidth: 420,
+            p: 4,
+            borderRadius: 3,
+          }}
+        >
+          <Typography variant="h5" fontWeight="bold" mb={1}>
+            {title}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" mb={3}>
+            {subtitle}
+          </Typography>
+          {children}
+        </Paper>
+      </Box>
+    </Box>
+  );
+}
+
+/* -------------------- Login Page -------------------- */
+export default function page() {
   const router = useRouter();
-  const [openSnackbar, setOpenSnackbar] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [snackbarSeverity, setSnackbarSeverity] = useState("success");
 
   const mutation = useMutation({
-    mutationFn: loginRequest,
-    onSuccess: (data) => {
-      console.log("✅ Login success:", data);
-      
-      // نمایش پیغام موفقیت
-      showMessage(data.message || "ورود موفقیت‌آمیز بود", "success");
-      
-      // ذخیره توکن اگر وجود دارد
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
-      // ذخیره اطلاعات کاربر
-      if (data.user) {
-        localStorage.setItem("user", JSON.stringify(data.user));
-      }
-      // ریدایرکت به صفحه اصلی بعد از 2 ثانیه
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 2000);
-    },
-    onError: (error) => {
-      console.error("❌ Login error:", error);
-      
-      // نمایش پیغام خطا
-      const errorMessage = error.message || 
-                          error.response?.data?.message || 
-                          "خطا در ارتباط با سرور";
-      showMessage(errorMessage, "error");
-    },
+    mutationFn: (data) =>
+      axios.post("http://localhost:5000/api/auth/login", data).then((r) => r.data),
+    onSuccess: () => router.push("/dashboard"),
   });
 
-  const showMessage = (message, severity = "info") => {
-    setSnackbarMessage(message);
-    setSnackbarSeverity(severity);
-    setOpenSnackbar(true);
-  };
-
-  const handleCloseSnackbar = () => {
-    setOpenSnackbar(false);
-  };
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    
-    const email = data.get("email");
-    const password = data.get("password");
-
-    if (!email || !password) {
-      showMessage("لطفا ایمیل و رمز عبور را وارد کنید", "warning");
-      return;
-    }
-
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
     mutation.mutate({
-      email: email.toString(),
-      password: password.toString(),
+      email: data.get("email"),
+      password: data.get("password"),
     });
   };
 
   return (
-    <Container maxWidth="sm">
-      <Box
-        sx={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Paper elevation={4} sx={{ p: 4, width: "100%", borderRadius: 3 }}>
-          <Typography component="h1" variant="h5" align="center" mb={3}>
-            ورود به حساب کاربری
-          </Typography>
+    <AuthLayout
+      title="ورود به پنل کاربری"
+      subtitle="برای ادامه وارد حساب خود شوید"
+    >
+      <Box component="form" onSubmit={handleSubmit}>
+        <TextField
+          fullWidth
+          label="ایمیل"
+          name="email"
+          margin="normal"
+          required
+        />
+        <TextField
+          fullWidth
+          label="رمز عبور"
+          name="password"
+          type="password"
+          margin="normal"
+          required
+        />
 
-          <Box component="form" onSubmit={handleSubmit} noValidate>
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="ایمیل"
-              name="email"
-              autoComplete="email"
-              autoFocus
-              disabled={mutation.isPending}
-              error={mutation.isError}
-              helperText={mutation.isError ? "ایمیل یا رمز عبور اشتباه است" : ""}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="رمز عبور"
-              type="password"
-              id="password"
-              autoComplete="current-password"
-              disabled={mutation.isPending}
-              error={mutation.isError}
-            />
-
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2, py: 1.5 }}
-              disabled={mutation.isPending}
-            >
-              {mutation.isPending ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : (
-                "ورود"
-              )}
-            </Button>
-
-            
-          </Box>
-        </Paper>
-      </Box>
-
-      {/* Snackbar برای پیغام‌ها */}
-      <Snackbar
-        open={openSnackbar}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert 
-          onClose={handleCloseSnackbar} 
-          severity={snackbarSeverity} 
-          sx={{ width: "100%" }}
+        <Button
+          type="submit"
+          fullWidth
+          variant="contained"
+          sx={{ mt: 3, py: 1.4, borderRadius: 2 }}
+          disabled={mutation.isPending}
         >
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
-    </Container>
+          {mutation.isPending ? (
+            <CircularProgress size={22} color="inherit" />
+          ) : (
+            "ورود"
+          )}
+        </Button>
+
+        <Divider sx={{ my: 3 }} />
+
+        <Typography variant="body2" align="center">
+          حساب کاربری ندارید؟{" "}
+          <Link href="/register" fontWeight="bold">
+            ثبت‌نام
+          </Link>
+        </Typography>
+      </Box>
+    </AuthLayout>
   );
 }

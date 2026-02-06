@@ -1,70 +1,102 @@
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import axios from "axios";
-import { useRouter } from "next/navigation";
 import { Snackbar, Alert } from "@mui/material";
 
-// Context برای اطلاعات کاربر
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const router = useRouter();
   const [user, setUser] = useState(null);
-  const [openSnackbar, setOpenSnackbar] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+  const [isLoading, setIsLoading] = useState(true);
 
-  const getUserInfo = async ({ id }) => {
-    try {
-      const response = await axios.get(`http://localhost:5000/api/auth/getUserInfo/${id}`);
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  };
-
-  const mutation = useMutation(getUserInfo, {
-    onSuccess: (data) => {
-      console.log("✅ User info fetched:", data);
-      if (data.user) {
-        setUser(data.user);
-        localStorage.setItem("user", JSON.stringify(data.user));
-      }
-      showMessage(data.message || "اطلاعات کاربر دریافت شد", "success");
-    },
-    onError: (error) => {
-      console.error("❌ Fetch error:", error);
-      const errorMessage = error.message || error.response?.data?.message || "خطا در ارتباط با سرور";
-      showMessage(errorMessage, "error");
-    },
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
   });
 
   const showMessage = (message, severity = "info") => {
-    setSnackbarMessage(message);
-    setSnackbarSeverity(severity);
-    setOpenSnackbar(true);
+    setSnackbar({ open: true, message, severity });
   };
 
-  const handleCloseSnackbar = () => setOpenSnackbar(false);
+  const closeSnackbar = () =>
+    setSnackbar((prev) => ({ ...prev, open: false }));
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+    setIsLoading(false);
+  }, []);
+
+  const fetchUserById = async (id) => {
+    try {
+      const res = await axios.get(
+        `http://localhost:5000/api/auth/getUserInfo/${id}`
+      );
+
+      if (res.data?.user) {
+        setUser(res.data.user);
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+      }
+
+      return res.data.user;
+    } catch (error) {
+      const message =
+        error?.response?.data?.message || "خطا در دریافت اطلاعات کاربر";
+      showMessage(message, "error");
+      throw error;
+    }
+  };
+
+  // ---------- Logout ----------
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem("user");
+    showMessage("با موفقیت خارج شدید", "success");
+  };
 
   return (
-    <AuthContext.Provider value={{ user, mutation }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        setUser,
+        fetchUserById,
+        logout,
+      }}
+    >
       {children}
+
       <Snackbar
-        open={openSnackbar}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={closeSnackbar}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: "100%" }}>
-          {snackbarMessage}
+        <Alert
+          severity={snackbar.severity}
+          onClose={closeSnackbar}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
         </Alert>
       </Snackbar>
     </AuthContext.Provider>
   );
 };
 
-// Hook برای استفاده راحت از Context
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) {
+    throw new Error("useAuth must be used inside AuthProvider");
+  }
+  return ctx;
+};

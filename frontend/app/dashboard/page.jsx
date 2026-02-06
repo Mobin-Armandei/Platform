@@ -63,7 +63,7 @@ export default function page() {
       </Typography>
 
       {/* Top Stats */}
-      <Grid container spacing={3} mb={3}>
+      <Grid container spacing={2} mb={3}>
         <Grid item xs={12} sm={12} md={6}>
           <StatCard
             title="موجودی کیف پول"

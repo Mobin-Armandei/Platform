@@ -8,43 +8,28 @@ datasource db {
 }
 
 //////////////////////////////////////////////////
-// User & Role
+// User
 //////////////////////////////////////////////////
 
 model User {
-  id           Int      @id @default(autoincrement())
-  email        String   @unique
-  firstName    String
-  lastName     String?
-  password     String
+  id          Int       @id @default(autoincrement())
+  email       String    @unique
+  firstName   String
+  lastName    String?
+  password    String
+  role        String    @default("CUSTOMER") // ADMIN | CUSTOMER | SITE_MANAGER
+  gender      String    // MALE | FEMALE
+  phoneNumber String
+  birthDate   DateTime?
 
-  role         String   // ADMIN | CUSTOMER | SITE_MANAGER
-  gender       String   // MALE | FEMALE
-  phoneNumber  String
-  birthDate    DateTime?
+  wallet      Wallet?
+  projects    Project[]
+  tickets     Ticket[]
 
-  roleId       Int
-  roleRel      Role     @relation(fields: [roleId], references: [id])
-
-  wallet       Wallet?
-  projects     Project[]
-  tickets      Ticket[]
-
-  createdAt    DateTime @db.DateTime2
-  updatedAt    DateTime @db.DateTime2
+  createdAt   DateTime  @default(now()) @db.DateTime2
+  updatedAt   DateTime  @updatedAt @db.DateTime2
 
   @@map("users")
-}
-
-model Role {
-  id        Int     @id @default(autoincrement())
-  name      String  @unique  // ADMIN | CUSTOMER | SITE_MANAGER
-  users     User[]
-
-  createdAt DateTime @db.DateTime2
-  updatedAt DateTime @db.DateTime2
-
-  @@map("roles")
 }
 
 //////////////////////////////////////////////////
@@ -54,13 +39,11 @@ model Role {
 model Wallet {
   id        Int       @id @default(autoincrement())
   userId    Int       @unique
-  user      User      @relation(fields: [userId], references: [id])
-
   balance   Decimal   @default(0)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   logs      WalletLog[]
-
-  createdAt DateTime  @db.DateTime2
-  updatedAt DateTime  @db.DateTime2
+  createdAt DateTime  @default(now()) @db.DateTime2
+  updatedAt DateTime  @updatedAt @db.DateTime2
 
   @@map("wallets")
 }
@@ -68,52 +51,92 @@ model Wallet {
 model WalletLog {
   id        Int      @id @default(autoincrement())
   walletId  Int
-  wallet    Wallet   @relation(fields: [walletId], references: [id])
-
   amount    Decimal
   type      String   // DEPOSIT | WITHDRAW
   note      String?
+  wallet    Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @db.DateTime2
+  createdAt DateTime @default(now()) @db.DateTime2
 
   @@map("wallet_logs")
 }
 
 //////////////////////////////////////////////////
-// Projects (Website Builder / CRM)
+// Project
 //////////////////////////////////////////////////
 
 model Project {
   id        Int      @id @default(autoincrement())
   name      String
   domain    String?
-  status    String   // PENDING | IN_PROGRESS | COMPLETED
+  status    String   @default("PENDING")
   progress  Int      @default(0)
-
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-
-  createdAt DateTime @db.DateTime2
-  updatedAt DateTime @db.DateTime2
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @db.DateTime2
+  updatedAt DateTime @updatedAt @db.DateTime2
 
   @@map("projects")
 }
 
 //////////////////////////////////////////////////
-// Tickets (Support System)
+// Ticket
 //////////////////////////////////////////////////
 
 model Ticket {
   id        Int      @id @default(autoincrement())
   title     String
   message   String
-  status    String   // OPEN | ANSWERED | CLOSED
-
+  status    String   @default("OPEN")
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-
-  createdAt DateTime @db.DateTime2
-  updatedAt DateTime @db.DateTime2
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @db.DateTime2
+  updatedAt DateTime @updatedAt @db.DateTime2
 
   @@map("tickets")
+}
+
+
+model Menu {
+  id          Int       @id @default(autoincrement())
+  title       String
+  parentId    Int?      // برای زیرمنوها
+  parent      Menu?     @relation("SubMenus", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  subMenus    Menu[]    @relation("SubMenus")
+  url         String?
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  @@map("menus")
+}
+
+
+model Page {
+  id         Int       @id @default(autoincrement())
+  slug       String    @unique
+  title      String
+  components String      // ترتیب و props هر کامپوننت
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+
+model ComponentCategory {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  components Component[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+
+model Component {
+  id         Int        @id @default(autoincrement())
+  name       String     // مثل HeroImage، FooterLinks
+  type       String     // نوع کامپوننت (برای mapping در Frontend)
+  categoryId Int
+  category   ComponentCategory @relation(fields: [categoryId], references: [id])
+  defaultProps String       // props پیش‌فرض
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
 }

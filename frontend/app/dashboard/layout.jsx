@@ -22,7 +22,7 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { usePathname, useRouter } from "next/navigation";
-
+import { useAuth } from "../../context/authContext";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -49,26 +49,27 @@ const menuItems = [
     label: "وبسایت",
     icon: <ArticleIcon />,
     children: [
-      { label: "اطلاعات اصلی", href: "/content/articles" },
-      { label: "مدیریت صفحات", href: "/content/pages" },
+      { label: "مدیریت منوها", href: "/dashboard/webSite/menues" },
+      { label: "اطلاعات اصلی", href: "/webSite/webMainInfo" },
+      { label: "مدیریت صفحات", href: "/webSite/pages" },
     ],
   },
   {
     label: "تصاویر",
     icon: <ArticleIcon />,
     children: [
-      { label: "گالری تصاویر", href: "/content/articles" },
-      { label: "دسته بندی گالری تصاویر", href: "/content/pages" },
+      { label: "گالری تصاویر", href: "/gallery" },
+      { label: "دسته بندی گالری تصاویر", href: "/galleryCategory" },
     ],
   },
   {
     label: "مالی",
     icon: <ArticleIcon />,
     children: [
-      { label: "تراکنش ها", href: "/content/articles" },
-      { label: "فاکتورها", href: "/content/pages" },
-      { label: "شارژ حساب کاربر", href: "/content/pages" },
-      { label: "کسر از حساب", href: "/content/pages" },
+      { label: "تراکنش ها", href: "/finance/transactions" },
+      { label: "فاکتورها", href: "/finance/factors" },
+      { label: "شارژ حساب کاربر", href: "/finance/walletCharging" },
+      { label: "کسر از حساب", href: "/finance/wallet" },
     ],
   },
   { label: "کیف پول", icon: <AccountBalanceWalletIcon />, href: "/wallet" },
@@ -79,11 +80,21 @@ const menuItems = [
 export default function DashboardLayout({ children }) {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [openMenus, setOpenMenus] = React.useState({});
-
+  const { user, isLoading, fetchUserById } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const pathname = usePathname();
   const router = useRouter();
+
+  React.useEffect(() => {
+    if (user?.id) return;
+
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const parsed = JSON.parse(storedUser);
+      if (parsed.id) fetchUserById(parsed.id).catch(console.error);
+    }
+  }, []);
 
   const handleToggleMenu = (label) => {
     setOpenMenus((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -98,6 +109,8 @@ export default function DashboardLayout({ children }) {
           p: 1,
           overflow: "auto",
           scrollbarWidth: "none",
+          backgroundColor: "#fff",
+          color: "#0a1a2f",
         }}
       >
         <List disablePadding>
@@ -121,7 +134,7 @@ export default function DashboardLayout({ children }) {
                     color: isActive ? "#4F46E5" : "inherit",
                   }}
                 >
-                  <ListItemIcon sx={{ minWidth: 36, color: isActive ? "#4F46E5" : "#2b59f1ff" }}>
+                  <ListItemIcon sx={{ minWidth: 36, color: isActive ? "#0a4496ff" : "#0a4496ff" }}>
                     {item.icon}
                   </ListItemIcon>
                   <ListItemText primary={item.label} />
@@ -163,6 +176,10 @@ export default function DashboardLayout({ children }) {
     </Box>
   );
 
+  if (isLoading) {
+    return <>در حال بارگزاری ...</>
+  }
+
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#F5F7FB" }}>
       <CssBaseline />
@@ -175,6 +192,7 @@ export default function DashboardLayout({ children }) {
           bgcolor: "#fff",
           color: "#1F2937",
           borderBottom: "1px solid #E5E7EB",
+          backgroundColor: "#fff",
         }}
       >
         <Toolbar sx={{ justifyContent: "space-between" }}>
@@ -192,7 +210,7 @@ export default function DashboardLayout({ children }) {
             sx={{ display: "flex", alignItems: "center", gap: 1, cursor: "pointer" }}
           >
             <Avatar sx={{ bgcolor: "#4F46E5" }}>م</Avatar>
-            <Typography>محمد رضایی</Typography>
+            <Typography>{user?.fullName}</Typography>
           </Box>
 
           <Menu

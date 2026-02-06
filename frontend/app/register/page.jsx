@@ -1,6 +1,4 @@
 "use client";
-// Login & Register layout inspired by ArvanCloud (modern, split, minimal)
-// This file shows BOTH pages structure + shared styles. You can split later.
 
 import React, { useState } from "react";
 import {
@@ -12,17 +10,25 @@ import {
   CircularProgress,
   Divider,
   Link,
+  InputAdornment,
+  IconButton,
+  Alert,
+  MenuItem,
+  Snackbar,
 } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
+
 
 /* -------------------- Shared Wrapper -------------------- */
 function AuthLayout({ title, subtitle, children }) {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
+        height: "100vh",
         display: "flex",
         bgcolor: "#f5f7fa",
       }}
@@ -40,11 +46,14 @@ function AuthLayout({ title, subtitle, children }) {
         }}
       >
         <Box>
-          <Typography variant="h3" fontWeight="bold" mb={2}>
-            Arvan Style
-          </Typography>
-          <Typography sx={{ opacity: 0.8, maxWidth: 360 }}>
-            زیرساخت ابری، سریع، امن و قابل اعتماد برای توسعه‌دهندگان حرفه‌ای
+          <Box
+            component="img"
+            src="/images/rosta.png"
+            alt="Rosta Logo"
+            sx={{ width: 220 }}
+          />
+          <Typography sx={{ opacity: 0.8, maxWidth: 620 }}>
+            <span color="orange">رستا</span> مسیر رشد آنلاین از ساخت تا رشد
           </Typography>
         </Box>
       </Box>
@@ -84,69 +93,155 @@ function AuthLayout({ title, subtitle, children }) {
 /* -------------------- Register Page -------------------- */
 export default function page() {
   const router = useRouter();
+  const [showPassword, setShowPassword] = React.useState(false);
 
+  const handleClickShowPassword = () => setShowPassword((show) => !show);
+
+  const handleMouseDownPassword = (event) => {
+    event.preventDefault();
+  };
+  const handleMouseUpPassword = (event) => {
+    event.preventDefault();
+  };
   const mutation = useMutation({
     mutationFn: (data) =>
       axios
         .post("http://localhost:5000/api/auth/register", data)
         .then((r) => r.data),
-    onSuccess: () => router.push("/login"),
+    onSuccess: (data) => {
+      setSnackbar({
+        open: true,
+        message: data.message,
+        severity: "success",
+      });
+      setTimeout(() => {
+        router.push("/login");
+      }, 800);
+    },
+    onError: (error) => {
+      const message =
+        error?.response?.data?.message || "خطا در ورود، لطفاً دوباره تلاش کنید";
+
+      setSnackbar({
+        open: true,
+        message,
+        severity: "error",
+      });
+    },
+  });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
   });
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
     mutation.mutate({
-      name: data.get("name"),
+      firstName: data.get("firstName"),
+      lastName: data.get("lastName"),
+      birthDate: data.get("birthDate"),
+      phoneNumber: data.get("phoneNumber"),
+      gender: data.get("gender"),
       email: data.get("email"),
       password: data.get("password"),
     });
   };
 
   return (
-    <AuthLayout
-      title="ایجاد حساب کاربری"
-      subtitle="چند ثانیه تا شروع استفاده"
-    >
-      <Box component="form" onSubmit={handleSubmit}>
-        <TextField fullWidth label="نام" name="name" margin="normal" />
-        <TextField
-          fullWidth
-          label="ایمیل"
-          name="email"
-          margin="normal"
-        />
-        <TextField
-          fullWidth
-          label="رمز عبور"
-          name="password"
-          type="password"
-          margin="normal"
-        />
-
-        <Button
-          type="submit"
-          fullWidth
-          variant="contained"
-          sx={{ mt: 3, py: 1.4, borderRadius: 2 }}
-          disabled={mutation.isPending}
+    <>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          severity={snackbar.severity}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          sx={{ width: "100%" }}
         >
-          {mutation.isPending ? (
-            <CircularProgress size={22} color="inherit" />
-          ) : (
-            "ثبت‌نام"
-          )}
-        </Button>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+      <AuthLayout
+        title="ایجاد حساب کاربری"
+        subtitle="بساز، منتشر کن، رشد بده"
+      >
+        <Box component="form" onSubmit={handleSubmit}>
+          <TextField fullWidth label="نام" name="firstName" margin="normal" />
+          <TextField fullWidth label="نام خانوادگی" name="lastName" margin="normal" />
+          <TextField fullWidth label="شماره همراه" name="phoneNumber" margin="normal" type="number" />
+          <TextField
+            fullWidth
+            label="ایمیل"
+            name="email"
+            margin="normal"
+            type="email"
+          />
+          <TextField fullWidth label="تاریخ تولد" name="birthDate" margin="normal" type="date" />
+          <TextField
+            fullWidth
+            name="gender"
+            select
+            label="جنسیت"
+            defaultValue="مرد"
+          >
+            <MenuItem key="Male" value="Male">
+              مرد
+            </MenuItem>
+            <MenuItem key="FEMALE" value="FEMALE">
+              زن
+            </MenuItem>
+          </TextField>
+          <TextField
+            fullWidth
+            label="رمز عبور"
+            name="password"
+            type="password"
+            // endAdornment={
+            //   <InputAdornment position="end">
+            //     <IconButton
+            //       aria-label={
+            //         showPassword ? 'hide the password' : 'display the password'
+            //       }
+            //       onClick={handleClickShowPassword}
+            //       onMouseDown={handleMouseDownPassword}
+            //       onMouseUp={handleMouseUpPassword}
+            //       edge="end"
+            //     >
+            //       {showPassword ? <VisibilityOff /> : <Visibility />}
+            //     </IconButton>
+            //   </InputAdornment>
+            // }
+            margin="normal"
+          />
 
-        <Divider sx={{ my: 3 }} />
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            sx={{ mt: 3, py: 1.4, borderRadius: 2 }}
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending ? (
+              <CircularProgress size={22} color="inherit" />
+            ) : (
+              "ثبت‌نام"
+            )}
+          </Button>
 
-        <Typography variant="body2" align="center">
-          قبلاً ثبت‌نام کرده‌اید؟{" "}
-          <Link href="/login" fontWeight="bold">
-            ورود
-          </Link>
-        </Typography>
-      </Box>
-    </AuthLayout>
+          <Divider sx={{ my: 3 }} />
+
+          <Typography variant="body2" align="center">
+            قبلاً ثبت‌نام کرده‌اید؟{" "}
+            <Link href="/login" fontWeight="bold">
+              ورود
+            </Link>
+          </Typography>
+        </Box>
+      </AuthLayout>
+    </>
   );
 }

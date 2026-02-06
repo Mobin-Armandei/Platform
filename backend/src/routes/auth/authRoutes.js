@@ -9,7 +9,7 @@ router.post('/register', (req, res, next) => authController.register(req, res, n
 // POST /api/auth/login
 router.post('/login', (req, res, next) => authController.login(req, res, next));
 
-router.post('/getUserInfo', authController.getUserInfo);
+router.get('/getUserInfo/:id', authController.getUserInfo);
 
 
 module.exports = router;

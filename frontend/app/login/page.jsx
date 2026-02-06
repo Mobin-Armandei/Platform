@@ -1,12 +1,12 @@
 "use client";
 import React, { useState } from "react";
-import { 
-  Box, 
-  Button, 
-  Container, 
-  TextField, 
-  Typography, 
-  Paper, 
+import {
+  Box,
+  Button,
+  Container,
+  TextField,
+  Typography,
+  Paper,
   CircularProgress,
   Alert,
   Snackbar,
@@ -16,6 +16,7 @@ import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/context/authContext";
 
 function AuthLayout({ title, subtitle, children }) {
   return (
@@ -24,6 +25,7 @@ function AuthLayout({ title, subtitle, children }) {
         minHeight: "100vh",
         display: "flex",
         bgcolor: "#f5f7fa",
+        textAlign: "center"
       }}
     >
       {/* Right branding panel (hidden on mobile) */}
@@ -83,11 +85,37 @@ function AuthLayout({ title, subtitle, children }) {
 /* -------------------- Login Page -------------------- */
 export default function page() {
   const router = useRouter();
-
+  const { setUser } = useAuth();
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
   const mutation = useMutation({
     mutationFn: (data) =>
       axios.post("http://localhost:5000/api/auth/login", data).then((r) => r.data),
-    onSuccess: () => router.push("/dashboard"),
+    onSuccess: (data) => {
+      setSnackbar({
+        open: true,
+        message: data.message || "ورود با موفقیت انجام شد",
+        severity: "success",
+      });
+      setUser(data.user);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 800);
+    },
+    onError: (error) => {
+      const message =
+        error?.response?.data?.message || "خطا در ورود، لطفاً دوباره تلاش کنید";
+
+      setSnackbar({
+        open: true,
+        message,
+        severity: "error",
+      });
+    },
   });
 
   const handleSubmit = (e) => {
@@ -100,50 +128,68 @@ export default function page() {
   };
 
   return (
-    <AuthLayout
-      title="ورود به پنل کاربری"
-      subtitle="برای ادامه وارد حساب خود شوید"
-    >
-      <Box component="form" onSubmit={handleSubmit}>
-        <TextField
-          fullWidth
-          label="ایمیل"
-          name="email"
-          margin="normal"
-          required
-        />
-        <TextField
-          fullWidth
-          label="رمز عبور"
-          name="password"
-          type="password"
-          margin="normal"
-          required
-        />
-
-        <Button
-          type="submit"
-          fullWidth
-          variant="contained"
-          sx={{ mt: 3, py: 1.4, borderRadius: 2 }}
-          disabled={mutation.isPending}
+    <>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          severity={snackbar.severity}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          sx={{ width: "100%" }}
         >
-          {mutation.isPending ? (
-            <CircularProgress size={22} color="inherit" />
-          ) : (
-            "ورود"
-          )}
-        </Button>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
 
-        <Divider sx={{ my: 3 }} />
 
-        <Typography variant="body2" align="center">
-          حساب کاربری ندارید؟{" "}
-          <Link href="/register" fontWeight="bold">
-            ثبت‌نام
-          </Link>
-        </Typography>
-      </Box>
-    </AuthLayout>
+      <AuthLayout
+        title="ورود به پنل کاربری"
+        subtitle="برای ادامه وارد حساب خود شوید"
+      >
+        <Box component="form" onSubmit={handleSubmit}>
+          <TextField
+            fullWidth
+            label="ایمیل"
+            name="email"
+            margin="normal"
+            required
+          />
+          <TextField
+            fullWidth
+            label="رمز عبور"
+            name="password"
+            type="password"
+            margin="normal"
+            required
+          />
+
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            sx={{ mt: 3, py: 1.4, borderRadius: 2 }}
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending ? (
+              <CircularProgress size={22} color="inherit" />
+            ) : (
+              "ورود"
+            )}
+          </Button>
+
+          <Divider sx={{ my: 3 }} />
+
+          <Typography variant="body2" align="center">
+            حساب کاربری ندارید؟{" "}
+            <Link href="/register" fontWeight="bold">
+              ثبت‌نام
+            </Link>
+          </Typography>
+        </Box>
+      </AuthLayout>
+    </>
   );
 }

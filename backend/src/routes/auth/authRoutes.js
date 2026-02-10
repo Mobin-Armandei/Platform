@@ -3,13 +3,10 @@ const authController = require('../../controller/auth/authController');
 
 const router = Router();
 
-// POST /api/auth/register
-router.post('/register', (req, res, next) => authController.register(req, res, next));
+router.post('/register', authController.register);
 
-// POST /api/auth/login
-router.post('/login', (req, res, next) => authController.login(req, res, next));
+router.post('/login', authController.login);
 
 router.get('/getUserInfo/:id', authController.getUserInfo);
-
 
 module.exports = router;

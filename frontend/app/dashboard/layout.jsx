@@ -29,6 +29,12 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import MessageIcon from "@mui/icons-material/Message";
 import SecurityIcon from "@mui/icons-material/Security";
 import ArticleIcon from "@mui/icons-material/Article";
+import LanguageOutlined from "@mui/icons-material/LanguageOutlined";
+import ImageIcon from "@mui/icons-material/Image";
+import Paid from "@mui/icons-material/Paid";
+import Wallet from "@mui/icons-material/Wallet";
+
+
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -36,45 +42,45 @@ import MenuIcon from "@mui/icons-material/Menu";
 const drawerWidth = 280;
 
 const menuItems = [
-  { label: "داشبورد", icon: <DashboardIcon />, href: "/dashboard" },
+  { label: "داشبورد", icon: <DashboardIcon htmlColor="red" />, href: "/dashboard" },
   {
     label: "محتوا",
-    icon: <ArticleIcon />,
+    icon: <ArticleIcon htmlColor="gray" />,
     children: [
-      { label: "مطالب سایت", href: "/content/articles" },
-      { label: "دسته بندی مطالب", href: "/content/pages" },
+      { label: "مطالب سایت", href: "/dashboard/content/post" },
+      { label: "دسته بندی مطالب", href: "/dashboard/content/categories" },
     ],
   },
   {
     label: "وبسایت",
-    icon: <ArticleIcon />,
+    icon: <LanguageOutlined color="warning" />,
     children: [
       { label: "مدیریت منوها", href: "/dashboard/webSite/menues" },
-      { label: "اطلاعات اصلی", href: "/webSite/webMainInfo" },
-      { label: "مدیریت صفحات", href: "/webSite/pages" },
+      { label: "اطلاعات اصلی", href: "/dashboard/webSite/webMainInfo" },
+      { label: "مدیریت صفحات", href: "/dashboard/webSite/pages" },
     ],
   },
   {
     label: "تصاویر",
-    icon: <ArticleIcon />,
+    icon: <ImageIcon color="info" />,
     children: [
-      { label: "گالری تصاویر", href: "/gallery" },
-      { label: "دسته بندی گالری تصاویر", href: "/galleryCategory" },
+      { label: "گالری تصاویر", href: "/dashboard/gallery" },
+      { label: "دسته بندی گالری تصاویر", href: "/dashboard/galleryCategory" },
     ],
   },
   {
     label: "مالی",
-    icon: <ArticleIcon />,
+    icon: <Paid color="success" />,
     children: [
-      { label: "تراکنش ها", href: "/finance/transactions" },
-      { label: "فاکتورها", href: "/finance/factors" },
-      { label: "شارژ حساب کاربر", href: "/finance/walletCharging" },
-      { label: "کسر از حساب", href: "/finance/wallet" },
+      { label: "تراکنش ها", href: "/dashboard/finance/transactions" },
+      { label: "فاکتورها", href: "/dashboard/finance/factors" },
+      { label: "شارژ حساب کاربر", href: "/dashboard/finance/walletCharging" },
+      { label: "کسر از حساب", href: "/dashboard/finance/wallet" },
     ],
   },
-  { label: "کیف پول", icon: <AccountBalanceWalletIcon />, href: "/wallet" },
-  { label: "تیکت‌ها", icon: <MessageIcon />, href: "/tickets" },
-  { label: "امنیت", icon: <SecurityIcon />, href: "/security" },
+  { label: "کیف پول", icon: <Wallet htmlColor="brown" />, href: "/dashboard/wallet" },
+  { label: "تیکت‌ها", icon: <MessageIcon />, href: "/dashboard/tickets" },
+  { label: "امنیت", icon: <SecurityIcon />, href: "/dashboard/security" },
 ];
 
 export default function DashboardLayout({ children }) {
@@ -159,6 +165,7 @@ export default function DashboardLayout({ children }) {
                                 ? "rgba(79,70,229,0.12)"
                                 : "transparent",
                               color: childActive ? "#4F46E5" : "inherit",
+                              listStyle: "desc"
                             }}
                           >
                             <ListItemText primary={child.label} />

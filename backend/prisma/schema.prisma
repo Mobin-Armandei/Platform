@@ -7,136 +7,115 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-//////////////////////////////////////////////////
-// User
-//////////////////////////////////////////////////
-
-model User {
-  id          Int       @id @default(autoincrement())
-  email       String    @unique
-  firstName   String
-  lastName    String?
-  password    String
-  role        String    @default("CUSTOMER") // ADMIN | CUSTOMER | SITE_MANAGER
-  gender      String    // MALE | FEMALE
-  phoneNumber String
-  birthDate   DateTime?
-
-  wallet      Wallet?
-  projects    Project[]
-  tickets     Ticket[]
-
-  createdAt   DateTime  @default(now()) @db.DateTime2
-  updatedAt   DateTime  @updatedAt @db.DateTime2
+model User {  
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  firstName    String
+  lastName     String?
+  password     String
+  role         String    // ADMIN | CUSTOMER | SUPPORT | FINANCE | SITE_MANAGER
+  gender       String    // MALE | FEMALE
+  phoneNumber  String    @unique
+  birthDate    DateTime?
+  roleId       Int
+  roleRel      Role      @relation(fields: [roleId], references: [id])
+  wallet       Wallet?
+  projects     Project[]
+  tickets      Ticket[]
+  posts        Post[]
+  createdAt    DateTime  @default(now()) @db.DateTime2
+  updatedAt    DateTime  @updatedAt @db.DateTime2
 
   @@map("users")
 }
 
-//////////////////////////////////////////////////
-// Wallet
-//////////////////////////////////////////////////
+model Role {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique  // ADMIN | CUSTOMER | SUPPORT | FINANCE
+  users     User[]
+  createdAt DateTime @default(now()) @db.DateTime2
+  updatedAt DateTime @updatedAt @db.DateTime2
+
+  @@map("roles")
+}
 
 model Wallet {
-  id        Int       @id @default(autoincrement())
-  userId    Int       @unique
-  balance   Decimal   @default(0)
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        Int        @id @default(autoincrement())
+  balance   Decimal    @default(0)
+  userId    Int        @unique
+  user      User       @relation(fields: [userId], references: [id])
   logs      WalletLog[]
-  createdAt DateTime  @default(now()) @db.DateTime2
-  updatedAt DateTime  @updatedAt @db.DateTime2
+  createdAt DateTime   @default(now()) @db.DateTime2
+  updatedAt DateTime   @updatedAt @db.DateTime2
 
   @@map("wallets")
 }
 
 model WalletLog {
   id        Int      @id @default(autoincrement())
-  walletId  Int
   amount    Decimal
   type      String   // DEPOSIT | WITHDRAW
-  note      String?
-  wallet    Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
-
+  reason    String?
+  walletId  Int
+  wallet    Wallet   @relation(fields: [walletId], references: [id])
   createdAt DateTime @default(now()) @db.DateTime2
 
   @@map("wallet_logs")
 }
 
-//////////////////////////////////////////////////
-// Project
-//////////////////////////////////////////////////
-
 model Project {
-  id        Int      @id @default(autoincrement())
-  name      String
-  domain    String?
-  status    String   @default("PENDING")
-  progress  Int      @default(0)
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now()) @db.DateTime2
-  updatedAt DateTime @updatedAt @db.DateTime2
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  domain      String?
+  status      String   // PENDING | IN_PROGRESS | COMPLETED
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now()) @db.DateTime2
+  updatedAt   DateTime @updatedAt @db.DateTime2
 
   @@map("projects")
 }
-
-//////////////////////////////////////////////////
-// Ticket
-//////////////////////////////////////////////////
 
 model Ticket {
   id        Int      @id @default(autoincrement())
   title     String
   message   String
-  status    String   @default("OPEN")
+  status    String   // OPEN | ANSWERED | CLOSED
   userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now()) @db.DateTime2
   updatedAt DateTime @updatedAt @db.DateTime2
 
   @@map("tickets")
 }
 
+model Category {
+  id                Int          @id @default(autoincrement())
+  title             String       @unique
+  description       String
+  slug              String       @unique
+  parentId          Int?      
+  parent            Category?    @relation("SubCategories", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children          Category[]   @relation("SubCategories")
+  posts             Post[]
+}
 
-model Menu {
-  id          Int       @id @default(autoincrement())
+model Post {
+  id          Int        @id @default(autoincrement())
   title       String
-  parentId    Int?      // برای زیرمنوها
-  parent      Menu?     @relation("SubMenus", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  subMenus    Menu[]    @relation("SubMenus")
-  url         String?
-  order       Int       @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  @@map("menus")
-}
+  content     String
+  foreword    String
+  tags        String?
+  images      String?
+  published   Boolean    @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  authorId    Int?
+  categoryId  Int?
+  author      User?      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  category    Category?  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
-
-model Page {
-  id         Int       @id @default(autoincrement())
-  slug       String    @unique
-  title      String
-  components String      // ترتیب و props هر کامپوننت
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-}
-
-
-model ComponentCategory {
-  id        Int        @id @default(autoincrement())
-  name      String     @unique
-  components Component[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-}
-
-
-model Component {
-  id         Int        @id @default(autoincrement())
-  name       String     // مثل HeroImage، FooterLinks
-  type       String     // نوع کامپوننت (برای mapping در Frontend)
-  categoryId Int
-  category   ComponentCategory @relation(fields: [categoryId], references: [id])
-  defaultProps String       // props پیش‌فرض
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  @@map("posts")
 }

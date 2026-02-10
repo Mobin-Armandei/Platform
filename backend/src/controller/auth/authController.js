@@ -1,6 +1,7 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-const bcrypt = require('bcrypt');
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 const SALT_ROUNDS = 10;
 
 class AuthController {
@@ -33,9 +34,22 @@ class AuthController {
         });
       }
 
+      const token = jwt.sign(
+        {
+          id: user.id,
+          role: user.roleRel.name,
+          email: user.email,
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: "7d",
+        }
+      );
+
       return res.status(200).json({
         success: true,
         message: "با موفقیت وارد شدید",
+        token,
         user: {
           id: user.id,
           fullName: `${user.firstName} ${user.lastName || ""}`.trim(),
@@ -50,33 +64,65 @@ class AuthController {
       });
     } catch (error) {
       console.error(error);
-      return res
-        .status(500)
-        .json({ success: false, message: "خطا در ورود لطفا مجددا تلاش نمایید" });
+      return res.status(500).json({
+        success: false,
+        message: "خطا در ورود لطفا مجددا تلاش نمایید",
+      });
     }
   }
 
-  async register(req, res, next) {
+  async register(req, res) {
     try {
-      const { firstName, lastName, birthDate, phoneNumber, email, password, role, gender } =
-        req.body;
+      const {
+        firstName,
+        lastName,
+        birthDate,
+        phoneNumber,
+        email,
+        password,
+        gender,
+      } = req.body;
 
-      if (!email || !firstName || !gender || !lastName || !birthDate || !phoneNumber || !password) {
-        return res.status(400).json({
-          success: false,
-          message: "تمامی فیلدها الزامی هستند",
-        });
+      if (
+        !email ||
+        !firstName ||
+        !lastName ||
+        !birthDate ||
+        !phoneNumber ||
+        !password ||
+        !gender
+      ) {
+        return res
+          .status(400)
+          .json({ success: false, message: "تمامی فیلدها الزامی هستند" });
       }
 
-      const existingUser = await prisma.user.findUnique({
-        where: { email },
-      });
+      const existingEmail = await prisma.user.findUnique({ where: { email } });
+      if (existingEmail) {
+        return res
+          .status(409)
+          .json({ success: false, message: "این ایمیل قبلا ثبت شده است" });
+      }
 
-      if (existingUser) {
-        return res.status(409).json({
-          success: false,
-          message: "این ایمیل قبلا ثبت شده است",
-        });
+      const existingPhoneNumber = await prisma.user.findUnique({
+        where: { phoneNumber },
+      });
+      if (existingPhoneNumber) {
+        return res
+          .status(409)
+          .json({
+            success: false,
+            message: "این شماره‌همراه قبلا ثبت شده است",
+          });
+      }
+
+      const existingRole = await prisma.role.findUnique({
+        where: { name: "CUSTOMER" },
+      });
+      if (!existingRole) {
+        return res
+          .status(500)
+          .json({ success: false, message: "نقش مشتری در سیستم ثبت نشده است" });
       }
 
       const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
@@ -89,8 +135,9 @@ class AuthController {
           phoneNumber,
           email,
           password: hashedPassword,
-          role: "CUSTOMER",
           gender: gender === "FEMALE" ? "FEMALE" : "MALE",
+          roleRel: { connect: { id: existingRole.id } },
+          role: existingRole.name,
         },
       });
 
@@ -99,7 +146,7 @@ class AuthController {
         message: "ثبت نام با موفقیت انجام شد",
         user: {
           id: newUser.id,
-          fullName: `${newUser.firstName} ${newUser.lastName || ""}`.trim(),
+          fullName: `${newUser.firstName} ${newUser.lastName}`.trim(),
           firstName: newUser.firstName,
           lastName: newUser.lastName,
           birthDate: newUser.birthDate,
@@ -112,9 +159,10 @@ class AuthController {
       });
     } catch (error) {
       console.error(error);
-      return res
-        .status(500)
-        .json({ success: false, message: "خطا در ثبت نام لطفا مجددا تلاش نمایید" });
+      return res.status(500).json({
+        success: false,
+        message: "خطا در ثبت نام لطفا مجددا تلاش نمایید",
+      });
     }
   }
 
@@ -122,7 +170,9 @@ class AuthController {
     try {
       const id = Number(req.params.id);
       if (isNaN(id)) {
-        return res.status(400).json({ success: false, message: "شناسه کاربر معتبر نیست" });
+        return res
+          .status(400)
+          .json({ success: false, message: "شناسه کاربر معتبر نیست" });
       }
 
       const user = await prisma.user.findUnique({
@@ -130,7 +180,9 @@ class AuthController {
       });
 
       if (!user) {
-        return res.status(404).json({ success: false, message: "کاربری یافت نشد" });
+        return res
+          .status(404)
+          .json({ success: false, message: "کاربری یافت نشد" });
       }
 
       return res.status(200).json({
@@ -151,7 +203,9 @@ class AuthController {
       });
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ success: false, message: "خطا در دریافت اطلاعات کاربر" });
+      return res
+        .status(500)
+        .json({ success: false, message: "خطا در دریافت اطلاعات کاربر" });
     }
   }
 }

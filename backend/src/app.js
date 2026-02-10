@@ -5,6 +5,8 @@ const morgan = require('morgan');
 const { PrismaClient } = require('@prisma/client');
 const authRoutes = require("../src/routes/auth/authRoutes");
 const menuRoutes = require("../src/routes/menuRoutes");
+const postRoutes = require("./routes/postRoutes");
+const categoryRoutes = require("./routes/categoryRoutes");
 
 const app = express();
 const prisma = new PrismaClient();
@@ -32,6 +34,11 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/menus', menuRoutes);
+app.use("/api/post", postRoutes);
+app.use("/api/category", categoryRoutes);
+app.use("/uploads", express.static("uploads"));
+app.use("/api/upload", require("./routes/upload"));
+
 
 // 404 handler
 app.use((req, res) => {

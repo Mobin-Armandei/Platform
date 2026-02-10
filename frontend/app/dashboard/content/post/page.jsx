@@ -1,9 +1,9 @@
 import React from 'react';
-import LoginContent from "./loginContent";
+import PostContent from './postContent';
 
 function page() {
   return (
-    <LoginContent></LoginContent>
+    <PostContent></PostContent>
   )
 };
 

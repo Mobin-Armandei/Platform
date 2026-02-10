@@ -11,8 +11,8 @@ const vazirmatn = Vazirmatn({
 });
 
 export const metadata: Metadata = {
-  title: 'پروژه فول استک',
-  description: 'پروژه فول استک با Next.js و Node.js',
+  title: 'وب‌بوست',
+  description: 'وب‌بوست مسیر رشد آنلاین از ساخت تا رشد',
 };
 
 export default function RootLayout({
